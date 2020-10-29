@@ -10,12 +10,15 @@
 #        Last modification: Oct 9th 2018                                                 #
 ###########################################################################################
 
-import shutil
 import glob
+# import _init_paths
+import os
+import shutil
+import sys
 
-from Evaluator import *
-from .pascalvoc import ValidateCoordinatesTypes, ValidateFormats, ValidateMandatoryArgs, \
-    ValidateImageSize, getBoundingBoxes
+from .lib.Evaluator import Evaluator
+from .lib.utils import MethodAveragePrecision, CoordinatesType
+from .pascalvoc import ValidateCoordinatesTypes, ValidateFormats, ValidateImageSize, getBoundingBoxes
 
 
 class PascalVocEvaluator:
@@ -30,6 +33,10 @@ class PascalVocEvaluator:
 
         self.iouThreshold = iouThreshold
 
+        classes_file = os.path.join(os.path.dirname(self.currentPath), 'coco_classes.txt')
+        with open(classes_file, 'r') as rf:
+            self.classes = [c.strip() for c in rf.readlines()]
+
         # Arguments validation
         errors = []
         # Validate formats: ('xywh': <left> <top> <width> <height>) or ('xyrb': <left> <top> <right> <bottom>)
@@ -42,13 +49,15 @@ class PascalVocEvaluator:
                 os.mkdir(self.tmp_path)
             # Groundtruth folder
             self.gtFolder = os.path.join(self.tmp_path, 'gt')
-            os.mkdir(self.gtFolder)
+            if not os.path.exists(self.gtFolder):
+                os.mkdir(self.gtFolder)
         if detFolder is None:
             if not os.path.exists(self.tmp_path):
                 os.mkdir(self.tmp_path)
             # Detection folder
             self.detFolder = os.path.join(self.tmp_path, 'det')
-            os.mkdir(self.detFolder)
+            if not os.path.exists(self.detFolder):
+                os.mkdir(self.detFolder)
 
         # Coordinates types
         self.gtCoordType = ValidateCoordinatesTypes(gtCoordinates, '-gtCoordinates', errors)
@@ -73,19 +82,6 @@ class PascalVocEvaluator:
             [print(e) for e in errors]
             sys.exit()
 
-        # Check if path to save results already exists and is not empty
-        if os.path.isdir(self.savePath) and os.listdir(self.savePath):
-            key_pressed = ''
-            while key_pressed.upper() not in ['Y', 'N']:
-                print(f'Folder {self.savePath} already exists and may contain important results.\n')
-                print(f'Enter \'Y\' to continue. WARNING: THIS WILL REMOVE ALL THE CONTENTS OF THE FOLDER!')
-                print(f'Or enter \'N\' to abort and choose another folder to save the results.')
-                key_pressed = input('')
-
-            if key_pressed.upper() == 'N':
-                print('Process canceled')
-                sys.exit()
-
         # Clear folder and save results
         shutil.rmtree(self.savePath, ignore_errors=True)
         os.makedirs(self.savePath)
@@ -93,30 +89,24 @@ class PascalVocEvaluator:
         self.showPlot = showPlot
 
     def _write_file(self, out_boxes, out_classes, out_scores=None, name=None):
-        if not self.tmp_dir:
-            self.tmp_dir = os.path.join(os.path.abspath(__file__ + "/../../"), 'tmp_results')
-        classes_file = '../coco_classes.txt'
-
         is_gt = out_scores is None
-        with open(classes_file, 'r') as rf:
-            class_dict = {str(i): c.strip() for i, c in enumerate(rf.readlines())}
         if is_gt:
-            file_out_path = os.path.join(self.gtFolder, name) if name else os.path.join(self.gtFolder,
-                                                                                             'tmp.txt')
+            file_out_path = os.path.join(self.gtFolder, name+'.txt') if name else os.path.join(self.gtFolder, 'tmp.txt')
         else:
-            file_out_path = os.path.join(self.detFolder, name) if name else os.path.join(self.detFolder,
-                                                                                              'tmp.txt')
+            file_out_path = os.path.join(self.detFolder, name+'.txt') if name else os.path.join(self.detFolder,
+                                                                                         'tmp.txt')
 
         with open(file_out_path, 'w') as fw:
             for n in range(len(out_classes)):
+                assert out_classes[n] in self.classes, f'CLASS {out_classes[n]} NOT RECOGNIZED!'
                 if is_gt:
-                    fw.write('{} {} {} {} {} '.format(class_dict[out_classes[n]],
+                    fw.write('{} {} {} {} {} '.format(out_classes[n],
                                                       int(out_boxes[n][1]),
                                                       int(out_boxes[n][0]),
                                                       int(out_boxes[n][3]),
                                                       int(out_boxes[n][2])))
                 else:
-                    fw.write('{} {} {} {} {} {} '.format(class_dict[out_classes[n]],
+                    fw.write('{} {} {} {} {} {} '.format(out_classes[n],
                                                          out_scores[n],
                                                          int(out_boxes[n][1]),
                                                          int(out_boxes[n][0]),
@@ -129,7 +119,7 @@ class PascalVocEvaluator:
                       gt_bb, gt_classes,
                       file_id):
         self._write_file(det_bb, det_classes, det_scores, name=file_id)
-        self._write_file(gt_bb, gt_classes, det_scores, name=file_id)
+        self._write_file(gt_bb, gt_classes, name=file_id)
 
         # Get groundtruth boxes
         allBoundingBoxes, allClasses = getBoundingBoxes(
@@ -178,7 +168,7 @@ class PascalVocEvaluator:
                 rec = ['%.2f' % r for r in recall]
                 ap_str = "{0:.2f}%".format(ap * 100)
                 # ap_str = "{0:.4f}%".format(ap * 100)
-                print('AP: %s (%s)' % (ap_str, cl))
+                # print('AP: %s (%s)' % (ap_str, cl))
                 f.write('\n\nClass: %s' % cl)
                 f.write('\nAP: %s' % ap_str)
                 f.write('\nPrecision: %s' % prec)
@@ -186,7 +176,7 @@ class PascalVocEvaluator:
 
         mAP = acc_AP / validClasses
         mAP_str = "{0:.2f}%".format(mAP * 100)
-        print('mAP: %s' % mAP_str)
+        # print('mAP: %s' % mAP_str)
         f.write('\n\n\nmAP: %s' % mAP_str)
 
         self._reset_folders()
