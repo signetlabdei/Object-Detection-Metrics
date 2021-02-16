@@ -91,10 +91,11 @@ class PascalVocEvaluator:
     def _write_file(self, out_boxes, out_classes, out_scores=None, name=None):
         is_gt = out_scores is None
         if is_gt:
-            file_out_path = os.path.join(self.gtFolder, name+'.txt') if name else os.path.join(self.gtFolder, 'tmp.txt')
+            file_out_path = os.path.join(self.gtFolder, name + '.txt') if name else os.path.join(self.gtFolder,
+                                                                                                 'tmp.txt')
         else:
-            file_out_path = os.path.join(self.detFolder, name+'.txt') if name else os.path.join(self.detFolder,
-                                                                                         'tmp.txt')
+            file_out_path = os.path.join(self.detFolder, name + '.txt') if name else os.path.join(self.detFolder,
+                                                                                                  'tmp.txt')
 
         with open(file_out_path, 'w') as fw:
             for n in range(len(out_classes)):
@@ -124,11 +125,14 @@ class PascalVocEvaluator:
         # Get groundtruth boxes
         allBoundingBoxes, allClasses = getBoundingBoxes(
             self.gtFolder, True, self.gtFormat, self.gtCoordType, imgSize=self.imgSize)
+        numGTObjects = len(allClasses)
+
         # Get detected boxes
         allBoundingBoxes, allClasses = getBoundingBoxes(
             self.detFolder, False, self.detFormat, self.detCoordType, allBoundingBoxes, allClasses,
             imgSize=self.imgSize)
         allClasses.sort()
+        numDetObjects = len(allClasses) - numGTObjects
 
         evaluator = Evaluator()
         acc_AP = 0
@@ -173,8 +177,15 @@ class PascalVocEvaluator:
                 f.write('\nAP: %s' % ap_str)
                 f.write('\nPrecision: %s' % prec)
                 f.write('\nRecall: %s' % rec)
-
-        mAP = acc_AP / validClasses
+                
+        if numGTObjects == 0:
+            print('Warning: 0 valid classes!')  # TODO: check this
+            if validClasses == 0:
+                mAP = 1
+            else:
+                mAP = 0
+        else:
+            mAP = acc_AP / validClasses
         mAP_str = "{0:.2f}%".format(mAP * 100)
         # print('mAP: %s' % mAP_str)
         f.write('\n\n\nmAP: %s' % mAP_str)
