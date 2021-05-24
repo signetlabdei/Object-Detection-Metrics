@@ -15,6 +15,7 @@ import glob
 import os
 import shutil
 import sys
+import numpy as np
 
 from .lib.Evaluator import Evaluator
 from .lib.utils import MethodAveragePrecision, CoordinatesType
@@ -116,81 +117,170 @@ class PascalVocEvaluator:
                 fw.write('\n')
         return file_out_path
 
+    # def compute_score(self, det_bb, det_classes, det_scores,
+    #                   gt_bb, gt_classes,
+    #                   file_id):
+    #     self._write_file(det_bb, det_classes, det_scores, name=file_id)
+    #     self._write_file(gt_bb, gt_classes, name=file_id)
+
+    #     # Get groundtruth boxes
+    #     allBoundingBoxes, allClasses = getBoundingBoxes(
+    #         self.gtFolder, True, self.gtFormat, self.gtCoordType, imgSize=self.imgSize)
+    #     numGTObjects = len(allClasses)
+
+    #     # Get detected boxes
+    #     allBoundingBoxes, allClasses = getBoundingBoxes(
+    #         self.detFolder, False, self.detFormat, self.detCoordType, allBoundingBoxes, allClasses,
+    #         imgSize=self.imgSize)
+    #     allClasses.sort()
+    #     numDetObjects = len(allClasses) - numGTObjects
+
+    #     evaluator = Evaluator()
+    #     acc_AP = 0
+    #     validClasses = 0
+
+    #     # Plot Precision x Recall curve
+    #     detections = evaluator.PlotPrecisionRecallCurve(
+    #         allBoundingBoxes,  # Object containing all bounding boxes (ground truths and detections)
+    #         IOUThreshold=self.iouThreshold,  # IOU threshold
+    #         method=MethodAveragePrecision.EveryPointInterpolation,
+    #         showAP=True,  # Show Average Precision in the title of the plot
+    #         showInterpolatedPrecision=False,  # Don't plot the interpolated precision curve
+    #         savePath=self.savePath,
+    #         showGraphic=self.showPlot)
+
+    #     f = open(os.path.join(self.savePath, 'results.txt'), 'w')
+    #     f.write('Object Detection Metrics\n')
+    #     f.write('https://github.com/rafaelpadilla/Object-Detection-Metrics\n\n\n')
+    #     f.write('Average Precision (AP), Precision and Recall per class:')
+
+    #     # each detection is a class
+    #     for metricsPerClass in detections:
+
+    #         # Get metric values per each class
+    #         cl = metricsPerClass['class']
+    #         ap = metricsPerClass['AP']
+    #         precision = metricsPerClass['precision']
+    #         recall = metricsPerClass['recall']
+    #         totalPositives = metricsPerClass['total positives']
+    #         total_TP = metricsPerClass['total TP']
+    #         total_FP = metricsPerClass['total FP']
+
+    #         if totalPositives > 0:
+    #             validClasses = validClasses + 1
+    #             acc_AP = acc_AP + ap
+    #             prec = ['%.2f' % p for p in precision]
+    #             rec = ['%.2f' % r for r in recall]
+    #             ap_str = "{0:.2f}%".format(ap * 100)
+    #             # ap_str = "{0:.4f}%".format(ap * 100)
+    #             # print('AP: %s (%s)' % (ap_str, cl))
+    #             f.write('\n\nClass: %s' % cl)
+    #             f.write('\nAP: %s' % ap_str)
+    #             f.write('\nPrecision: %s' % prec)
+    #             f.write('\nRecall: %s' % rec)
+                
+    #     if numGTObjects == 0:
+    #         print('Warning: 0 valid classes!')  # TODO: check this
+    #         if validClasses == 0:
+    #             mAP = 1
+    #         else:
+    #             mAP = 0
+    #     else:
+    #         mAP = acc_AP / validClasses
+    #     mAP_str = "{0:.2f}%".format(mAP * 100)
+    #     # print('mAP: %s' % mAP_str)
+    #     f.write('\n\n\nmAP: %s' % mAP_str)
+
+    #     self._reset_folders()
+    #     return mAP
+
     def compute_score(self, det_bb, det_classes, det_scores,
                       gt_bb, gt_classes,
                       file_id):
-        self._write_file(det_bb, det_classes, det_scores, name=file_id)
-        self._write_file(gt_bb, gt_classes, name=file_id)
+        ap_per_th = {}
+        for iouTh in np.arange(0.4,0.96,0.05):
+            self._write_file(det_bb, det_classes, det_scores, name=file_id)
+            self._write_file(gt_bb, gt_classes, name=file_id)
 
-        # Get groundtruth boxes
-        allBoundingBoxes, allClasses = getBoundingBoxes(
-            self.gtFolder, True, self.gtFormat, self.gtCoordType, imgSize=self.imgSize)
-        numGTObjects = len(allClasses)
+            # Get groundtruth boxes
+            allBoundingBoxes, allClasses = getBoundingBoxes(
+                self.gtFolder, True, self.gtFormat, self.gtCoordType, imgSize=self.imgSize)
+            numGTObjects = len(allClasses)
 
-        # Get detected boxes
-        allBoundingBoxes, allClasses = getBoundingBoxes(
-            self.detFolder, False, self.detFormat, self.detCoordType, allBoundingBoxes, allClasses,
-            imgSize=self.imgSize)
-        allClasses.sort()
-        numDetObjects = len(allClasses) - numGTObjects
+            # Get detected boxes
+            allBoundingBoxes, allClasses = getBoundingBoxes(
+                self.detFolder, False, self.detFormat, self.detCoordType, allBoundingBoxes, allClasses,
+                imgSize=self.imgSize)
+            allClasses.sort()
+            numDetObjects = len(allClasses) - numGTObjects
 
-        evaluator = Evaluator()
-        acc_AP = 0
-        validClasses = 0
+            evaluator = Evaluator()
+            acc_AP = 0
+            validClasses = 0
 
-        # Plot Precision x Recall curve
-        detections = evaluator.PlotPrecisionRecallCurve(
-            allBoundingBoxes,  # Object containing all bounding boxes (ground truths and detections)
-            IOUThreshold=self.iouThreshold,  # IOU threshold
-            method=MethodAveragePrecision.EveryPointInterpolation,
-            showAP=True,  # Show Average Precision in the title of the plot
-            showInterpolatedPrecision=False,  # Don't plot the interpolated precision curve
-            savePath=self.savePath,
-            showGraphic=self.showPlot)
+            # Plot Precision x Recall curve
+            detections = evaluator.PlotPrecisionRecallCurve(
+                allBoundingBoxes,  # Object containing all bounding boxes (ground truths and detections)
+                IOUThreshold=iouTh,  # IOU threshold
+                method=MethodAveragePrecision.EveryPointInterpolation,
+                showAP=True,  # Show Average Precision in the title of the plot
+                showInterpolatedPrecision=False,  # Don't plot the interpolated precision curve
+                savePath=self.savePath,
+                showGraphic=self.showPlot)
 
-        f = open(os.path.join(self.savePath, 'results.txt'), 'w')
-        f.write('Object Detection Metrics\n')
-        f.write('https://github.com/rafaelpadilla/Object-Detection-Metrics\n\n\n')
-        f.write('Average Precision (AP), Precision and Recall per class:')
+            f = open(os.path.join(self.savePath, 'results.txt'), 'w')
+            f.write('Object Detection Metrics\n')
+            f.write('https://github.com/rafaelpadilla/Object-Detection-Metrics\n\n\n')
+            f.write('Average Precision (AP), Precision and Recall per class:')
 
-        # each detection is a class
-        for metricsPerClass in detections:
+            # each detection is a class
+            for metricsPerClass in detections:
 
-            # Get metric values per each class
-            cl = metricsPerClass['class']
-            ap = metricsPerClass['AP']
-            precision = metricsPerClass['precision']
-            recall = metricsPerClass['recall']
-            totalPositives = metricsPerClass['total positives']
-            total_TP = metricsPerClass['total TP']
-            total_FP = metricsPerClass['total FP']
+                # Get metric values per each class
+                cl = metricsPerClass['class']
+                ap = metricsPerClass['AP']
 
-            if totalPositives > 0:
-                validClasses = validClasses + 1
-                acc_AP = acc_AP + ap
-                prec = ['%.2f' % p for p in precision]
-                rec = ['%.2f' % r for r in recall]
-                ap_str = "{0:.2f}%".format(ap * 100)
-                # ap_str = "{0:.4f}%".format(ap * 100)
-                # print('AP: %s (%s)' % (ap_str, cl))
-                f.write('\n\nClass: %s' % cl)
-                f.write('\nAP: %s' % ap_str)
-                f.write('\nPrecision: %s' % prec)
-                f.write('\nRecall: %s' % rec)
-                
-        if numGTObjects == 0:
-            print('Warning: 0 valid classes!')  # TODO: check this
-            if validClasses == 0:
-                mAP = 1
+                if cl not in ap_per_th.keys():
+                    ap_per_th[cl] = [ap]
+                else:
+                    ap_per_th[cl].append(ap)
+
+                precision = metricsPerClass['precision']
+                recall = metricsPerClass['recall']
+                totalPositives = metricsPerClass['total positives']
+                total_TP = metricsPerClass['total TP']
+                total_FP = metricsPerClass['total FP']
+
+                if totalPositives > 0:
+                    validClasses = validClasses + 1
+                    acc_AP = acc_AP + ap
+                    prec = ['%.2f' % p for p in precision]
+                    rec = ['%.2f' % r for r in recall]
+                    ap_str = "{0:.2f}%".format(ap * 100)
+                    # ap_str = "{0:.4f}%".format(ap * 100)
+                    # print('AP: %s (%s)' % (ap_str, cl))
+                    f.write('\n\nClass: %s' % cl)
+                    f.write('\nAP: %s' % ap_str)
+                    f.write('\nPrecision: %s' % prec)
+                    f.write('\nRecall: %s' % rec)
+                    
+            if numGTObjects == 0:
+                print('Warning: 0 valid classes!')  # TODO: check this
+                if validClasses == 0:
+                    mAP = 1
+                else:
+                    mAP = 0
             else:
-                mAP = 0
-        else:
-            mAP = acc_AP / validClasses
-        mAP_str = "{0:.2f}%".format(mAP * 100)
-        # print('mAP: %s' % mAP_str)
-        f.write('\n\n\nmAP: %s' % mAP_str)
+                mAP = acc_AP / validClasses
+            mAP_str = "{0:.2f}%".format(mAP * 100)
+            # print('mAP: %s' % mAP_str)
+            f.write('\n\n\nmAP: %s' % mAP_str)
 
-        self._reset_folders()
+            self._reset_folders()
+        ap_per_class = {}
+        for k,v in ap_per_th.items():
+            ap_per_class[k] = np.mean(v)
+        mAP = np.mean(list(ap_per_class.values()))
         return mAP
 
     def _reset_folders(self):
