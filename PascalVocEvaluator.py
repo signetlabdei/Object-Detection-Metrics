@@ -219,19 +219,24 @@ class PascalVocEvaluator:
             validClasses = 0
 
             # Plot Precision x Recall curve
-            detections = evaluator.PlotPrecisionRecallCurve(
+            # detections = evaluator.PlotPrecisionRecallCurve(
+            #     allBoundingBoxes,  # Object containing all bounding boxes (ground truths and detections)
+            #     IOUThreshold=iouTh,  # IOU threshold
+            #     method=MethodAveragePrecision.EveryPointInterpolation,
+            #     showAP=True,  # Show Average Precision in the title of the plot
+            #     showInterpolatedPrecision=False,  # Don't plot the interpolated precision curve
+            #     savePath=self.savePath,
+            #     showGraphic=self.showPlot)
+            
+            detections = evaluator.GetPascalVOCMetrics(
                 allBoundingBoxes,  # Object containing all bounding boxes (ground truths and detections)
                 IOUThreshold=iouTh,  # IOU threshold
-                method=MethodAveragePrecision.EveryPointInterpolation,
-                showAP=True,  # Show Average Precision in the title of the plot
-                showInterpolatedPrecision=False,  # Don't plot the interpolated precision curve
-                savePath=self.savePath,
-                showGraphic=self.showPlot)
+                method=MethodAveragePrecision.EveryPointInterpolation)
 
-            f = open(os.path.join(self.savePath, 'results.txt'), 'w')
-            f.write('Object Detection Metrics\n')
-            f.write('https://github.com/rafaelpadilla/Object-Detection-Metrics\n\n\n')
-            f.write('Average Precision (AP), Precision and Recall per class:')
+            # f = open(os.path.join(self.savePath, 'results.txt'), 'w')
+            # f.write('Object Detection Metrics\n')
+            # f.write('https://github.com/rafaelpadilla/Object-Detection-Metrics\n\n\n')
+            # f.write('Average Precision (AP), Precision and Recall per class:')
 
             # each detection is a class
             for metricsPerClass in detections:
@@ -259,10 +264,10 @@ class PascalVocEvaluator:
                     ap_str = "{0:.2f}%".format(ap * 100)
                     # ap_str = "{0:.4f}%".format(ap * 100)
                     # print('AP: %s (%s)' % (ap_str, cl))
-                    f.write('\n\nClass: %s' % cl)
-                    f.write('\nAP: %s' % ap_str)
-                    f.write('\nPrecision: %s' % prec)
-                    f.write('\nRecall: %s' % rec)
+                    # f.write('\n\nClass: %s' % cl)
+                    # f.write('\nAP: %s' % ap_str)
+                    # f.write('\nPrecision: %s' % prec)
+                    # f.write('\nRecall: %s' % rec)
                     
             if numGTObjects == 0:
                 print('Warning: 0 valid classes!')  # TODO: check this
@@ -274,7 +279,7 @@ class PascalVocEvaluator:
                 mAP = acc_AP / validClasses
             mAP_str = "{0:.2f}%".format(mAP * 100)
             # print('mAP: %s' % mAP_str)
-            f.write('\n\n\nmAP: %s' % mAP_str)
+            # f.write('\n\n\nmAP: %s' % mAP_str)
 
             self._reset_folders()
         ap_per_class = {}
