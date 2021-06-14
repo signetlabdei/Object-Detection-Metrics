@@ -20,6 +20,7 @@ import numpy as np
 from .lib.Evaluator import Evaluator
 from .lib.utils import MethodAveragePrecision, CoordinatesType
 from .pascalvoc import ValidateCoordinatesTypes, ValidateFormats, ValidateImageSize, getBoundingBoxes
+from datetime import datetime
 
 
 class PascalVocEvaluator:
@@ -29,8 +30,12 @@ class PascalVocEvaluator:
                  savePath=None, imgSize=(), savepath='', showPlot=False):
         # Get current path to set default folders
         self.currentPath = os.path.dirname(os.path.abspath(__file__))
-        self.tmp_path = os.path.join(self.currentPath, 'tmp_files')
         self.VERSION = '0.1 (beta)'
+        
+        now = datetime.now()
+        format = "%d%m%Y_%H%M%S"
+        scorer_tmp_folder = now.strftime(format)
+        self.tmp_path = os.path.join(self.currentPath, 'tmp_files_'+scorer_tmp_folder)
 
         self.iouThreshold = iouThreshold
 
