@@ -16,12 +16,11 @@ import os
 import shutil
 import sys
 import numpy as np
+import uuid
 
 from .lib.Evaluator import Evaluator
 from .lib.utils import MethodAveragePrecision, CoordinatesType
 from .pascalvoc import ValidateCoordinatesTypes, ValidateFormats, ValidateImageSize, getBoundingBoxes
-from datetime import datetime
-
 
 class PascalVocEvaluator:
 
@@ -32,10 +31,9 @@ class PascalVocEvaluator:
         self.currentPath = os.path.dirname(os.path.abspath(__file__))
         self.VERSION = '0.1 (beta)'
         
-        now = datetime.now()
-        format = "%d%m%Y_%H%M%S"
-        scorer_tmp_folder = now.strftime(format)
-        self.tmp_path = os.path.join(self.currentPath, 'tmp_files_'+scorer_tmp_folder)
+        
+        filename = uuid.uuid4().hex
+        self.tmp_path = os.path.join(self.currentPath, 'tmp_files_'+filename)
 
         self.iouThreshold = iouThreshold
 
