@@ -285,9 +285,14 @@ class PascalVocEvaluator:
             # f.write('\n\n\nmAP: %s' % mAP_str)
 
             self._reset_folders()
-        
-        if len(ap_per_th)==0:
-            return -1
+
+        if len(gt_bb) == 0:  
+            if len(ap_per_th) > 0:
+                return 0
+            else:
+                return 1
+        if len(ap_per_th) == 0:
+            return 0
         ap_per_class = {}
         for k,v in ap_per_th.items():
             ap_per_class[k] = np.mean(v)
