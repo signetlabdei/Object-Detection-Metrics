@@ -272,23 +272,27 @@ class PascalVocEvaluator:
                     # f.write('\nPrecision: %s' % prec)
                     # f.write('\nRecall: %s' % rec)
                     
-            if numGTObjects == 0:
-                print('Warning: 0 valid classes!')  # TODO: check this
-                if validClasses == 0:
-                    mAP = 1
-                else:
-                    mAP = 0
-            else:
-                mAP = acc_AP / validClasses
-            mAP_str = "{0:.2f}%".format(mAP * 100)
+            # if numGTObjects == 0:
+            #     print('Warning: 0 valid classes!')  # TODO: check this
+            #     if validClasses == 0:
+            #         mAP = 1
+            #     else:
+            #         mAP = 0
+            # else:
+            #     mAP = acc_AP / validClasses
+            # mAP_str = "{0:.2f}%".format(mAP * 100)
             # print('mAP: %s' % mAP_str)
             # f.write('\n\n\nmAP: %s' % mAP_str)
 
             self._reset_folders()
+        
+        if len(ap_per_th)==0:
+            return -1
         ap_per_class = {}
         for k,v in ap_per_th.items():
             ap_per_class[k] = np.mean(v)
         mAP = np.mean(list(ap_per_class.values()))
+
         return mAP
 
     def _reset_folders(self):
