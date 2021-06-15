@@ -73,10 +73,10 @@ class PascalVocEvaluator:
         if self.detCoordType == CoordinatesType.Relative:  # Image size is required
             self.imgSize = ValidateImageSize(imgSize, '-imgsize', '-detCoordinates', errors)
 
-        if savePath is not None:
-            self.savePath = self.ValidatePaths(savePath, '-sp/--savepath', errors)
-        else:
-            self.savePath = os.path.join(self.currentPath, 'results')
+        # if savePath is not None:
+        #     self.savePath = self.ValidatePaths(savePath, '-sp/--savepath', errors)
+        # else:
+        #     self.savePath = os.path.join(self.currentPath, 'results')
         # Validate savePath
         # If error, show error messages
         if len(errors) != 0:
@@ -87,8 +87,8 @@ class PascalVocEvaluator:
             sys.exit()
 
         # Clear folder and save results
-        shutil.rmtree(self.savePath, ignore_errors=True)
-        os.makedirs(self.savePath)
+        # shutil.rmtree(self.savePath, ignore_errors=True)
+        # os.makedirs(self.savePath)
         # Show plot during execution
         self.showPlot = showPlot
 
